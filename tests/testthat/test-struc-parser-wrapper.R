@@ -1,0 +1,73 @@
+test_that("struc_parser_wrapper returns glyrepr-compatible vectors", {
+  skip_on_old_win()
+
+  parsed <- parse_strucgp_struc(
+    "A2B2C1D1E2F1G3gfF5fedD1E2F1feE2F1fedcba"
+  )
+  reconstructed <- glyrepr::as_glycan_structure(
+    glyrepr::get_structure_graphs(parsed)
+  )
+
+  expect_identical(typeof(parsed), typeof(reconstructed))
+
+  parsed_tbl <- dplyr::tibble(glycan_structure = parsed)
+  unique_tbl <- dplyr::distinct(parsed_tbl, .data$glycan_structure)
+
+  expect_error(
+    dplyr::left_join(parsed_tbl, unique_tbl, by = "glycan_structure"),
+    NA
+  )
+})
+
+test_that("struc_parser_wrapper treats invalid parsed arrays as failures", {
+  parser <- function(x) {
+    list(
+      mono = "Hex",
+      sub = "",
+      anomer = "??",
+      edges = if (x == "invalid") c(1L, 1L) else integer(),
+      linkage = if (x == "invalid") "??-?" else character()
+    )
+  }
+
+  result <- struc_parser_wrapper(
+    c("valid", "invalid"),
+    parser,
+    on_failure = "na"
+  )
+
+  expect_identical(as.character(result), c("Hex(??-", NA_character_))
+})
+
+test_that("struc_parser_wrapper preserves mixed monosaccharide types", {
+  input <- c(
+    generic = "Hex(??-",
+    concrete = "Glc(?1-",
+    generic_duplicate = "Hex(??-",
+    mixed = "Gal(?1-?)HexNAc(?1-",
+    missing = NA_character_
+  )
+
+  result <- normalized_struc_parser_wrapper(input)
+
+  expect_identical(
+    as.character(result),
+    c(
+      generic = "Hex(??-",
+      concrete = "Glc(?1-",
+      generic_duplicate = "Hex(??-",
+      mixed = "Gal(?1-?)HexNAc(?1-",
+      missing = NA_character_
+    )
+  )
+  expect_identical(
+    glyrepr::get_mono_type(result),
+    c(
+      generic = "generic",
+      concrete = "concrete",
+      generic_duplicate = "generic",
+      mixed = "mixed",
+      missing = NA_character_
+    )
+  )
+})

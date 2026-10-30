@@ -1,0 +1,179 @@
+test_that("auto_parse correctly identifies and parses IUPAC-condensed format", {
+  input <- "Gal(b1-3)GlcNAc(b1-4)Glc(a1-"
+  result <- auto_parse(input)
+  expected <- parse_iupac_condensed(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse preserves inferred IUPAC-condensed alditols", {
+  result <- auto_parse("Glc-ol")
+
+  expect_identical(as.character(result), "Glc-ol(?1-")
+  expect_identical(unname(glyrepr::get_alditol(result)), TRUE)
+})
+
+test_that("auto_parse correctly identifies and parses IUPAC-short format", {
+  input <- "Neu5Aca3Gala3(Fuca6)GlcNAcb-"
+  result <- auto_parse(input)
+  expected <- parse_iupac_short(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses IUPAC-extended format", {
+  input <- "β-D-Galp-(1→3)[β-D-Galp-(1→4)-β-D-GlcpNAc-(1→6)]-α-D-GalpNAc-(1→"
+  result <- auto_parse(input)
+  expected <- parse_iupac_extended(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses plain text IUPAC-extended format", {
+  input <- "beta-D-Galp-(1->3)-alpha-D-GalpNAc-(1->"
+  result <- auto_parse(input)
+  expected <- parse_iupac_extended(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses pGlyco format", {
+  input <- "(N(F)(N(H(H(N))(H(N(H))))))"
+  result <- auto_parse(input)
+  expected <- parse_pglyco_struc(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses StrucGP format", {
+  input <- "A2B2C1D1E2F1fedD1E2edcbB5ba"
+  result <- auto_parse(input)
+  expected <- parse_strucgp_struc(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses Linear Code format", {
+  input <- "Ma3(Ma6)Mb4GNb4GNb"
+  result <- auto_parse(input)
+  expected <- parse_linear_code(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse preserves furanose rings", {
+  input <- c("Galf(b1-3)GlcfNAc(b1-", "A^b3G^b")
+
+  result <- auto_parse(input)
+
+  expect_identical(
+    as.character(result),
+    c("Galf(b1-3)GlcfNAc(b1-", "Galf(b1-3)Glcf(b1-")
+  )
+})
+
+test_that("auto_parse correctly identifies and parses LINUCS format", {
+  input <- "[][b-D-Glcp]{[(4+1)][b-D-Galp]{}}"
+  result <- auto_parse(input)
+  expected <- parse_linucs(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses GlyCAM IUPAC format", {
+  input <- "DManpa1-3[DManpa1-6]DManpb1-4DGlcpNAcb1-4DGlcpNAcb1-OH"
+  result <- auto_parse(input)
+  expected <- parse_glycam_iupac(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse preserves unusual configurations", {
+  expect_identical(
+    as.character(auto_parse("DFucpa1-OH")),
+    "D-Fuc(a1-"
+  )
+  expect_identical(
+    as.character(auto_parse("D-Fuc(a1-")),
+    "D-Fuc(a1-"
+  )
+})
+
+test_that("auto_parse correctly identifies and parses IUPAC-compact format", {
+  input <- "Mana1-3(Mana1-6)Manb1-4GlcNAcb"
+  result <- auto_parse(input)
+  expected <- parse_iupac_compact(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses IUPAC-compact format with `(`", {
+  input <- "(6S)Galb1-4GlcNAc"
+  result <- auto_parse(input)
+  expected <- parse_iupac_compact(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse correctly identifies and parses KCF format", {
+  input <- paste0(
+    "ENTRY       G00066                      Glycan\n",
+    "NODE        6\n",
+    "            1   Cer        18     0\n",
+    "            2   Glc        12     0\n",
+    "            3   Gal         6     0\n",
+    "            4   GlcNAc     -2     0\n",
+    "            5   Gal       -10     0\n",
+    "            6   GlcNAc    -18     0\n",
+    "EDGE        5\n",
+    "            1     2:b1    1:1\n",
+    "            2     3:b1    2:4\n",
+    "            3     4:b1    3:3\n",
+    "            4     5:b1    4:4\n",
+    "            5     6:b1    5:3\n",
+    "///"
+  )
+  result <- auto_parse(input)
+  expected <- parse_kcf(input)
+  expect_equal(as.character(result), as.character(expected))
+})
+
+test_that("auto_parse works with mixed format vector", {
+  mixed_input <- c(
+    "Gal(b1-3)GlcNAc(b1-4)Glc(a1-", # IUPAC-condensed
+    "Neu5Aca3Gala3(Fuca6)GlcNAcb-" # IUPAC-short
+  )
+  result <- auto_parse(mixed_input)
+  expected <- c(
+    parse_iupac_condensed(mixed_input[1]),
+    parse_iupac_short(mixed_input[2])
+  )
+  expect_equal(as.character(result), as.character(expected))
+})
+
+
+test_that("automatic parsing batches formats and restores mixed input positions", {
+  input <- c(
+    first = "(N)",
+    iupac = "Gal(b1-3)Glc(a1-",
+    missing = NA,
+    invalid = "WURCS-invalid",
+    duplicate = "(N)",
+    second = "(H)",
+    equivalent = "HexNAc(??-"
+  )
+  batches <- list()
+  original <- parse_pglyco_struc
+  local_mocked_bindings(parse_pglyco_struc = function(x, ...) {
+    batches[[length(batches) + 1L]] <<- x
+    original(x, ...)
+  })
+  result <- auto_parse(input, on_failure = "na")
+  expect_identical(batches, list(c("(N)", "(H)")))
+  expect_identical(names(result), names(input))
+  expect_identical(
+    unname(as.character(result)),
+    c(
+      "HexNAc(??-",
+      "Gal(b1-3)Glc(a1-",
+      NA,
+      NA,
+      "HexNAc(??-",
+      "Hex(??-",
+      "HexNAc(??-"
+    )
+  )
+  expect_length(attr(result, "graphs"), 3L)
+  error <- tryCatch(auto_parse(input), error = identity)
+  expect_s3_class(error, "rlang_error")
+  expect_match(conditionMessage(error), "WURCS-invalid", fixed = TRUE)
+})

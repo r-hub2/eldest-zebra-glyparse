@@ -1,0 +1,48 @@
+#' Parse WURCS Structures
+#'
+#' This function parses WURCS strings into a [glyrepr::glycan_structure()].
+#' Currently, only WURCS 2.0 is supported.
+#' For more information about WURCS, see [WURCS](https://github.com/glycoinfo/WURCS/wiki).
+#' Main reducing-end alditol residues retain their alditol status and use an
+#' unknown anomer configuration.
+#' Ambiguous alternative linkage groups are represented as floating glycan
+#' parts when their child residue or subtree is not localized to one parent.
+#' Candidate parents may belong to the main glycan or another floating
+#' component.
+#' Floating substituents preserve their chemistry, carbon-position ambiguity,
+#' and candidate parent residues across the complete structure.
+#'
+#' @param x A character vector of WURCS strings. NA values are allowed and will be returned as NA structures.
+#' @param on_failure How to handle parsing failures. `"error"` aborts when a
+#'   structure cannot be parsed. `"na"` returns `NA` at invalid positions.
+#' @param progress Whether to show a progress bar while parsing.
+#' @param validate Deprecated and ignored. Array records
+#'   are always validated by [glyrepr::structure_from_arrays()].
+#'
+#' @return A [glyrepr::glycan_structure()] object.
+#'
+#' @examples
+#' wurcs <- paste0(
+#'   "WURCS=2.0/3,5,4/",
+#'   "[a2122h-1b_1-5_2*NCC/3=O][a1122h-1b_1-5][a1122h-1a_1-5]/",
+#'   "1-1-2-3-3/a4-b1_b4-c1_c3-d1_c6-e1"
+#' )
+#' parse_wurcs(wurcs)
+#'
+#' @export
+parse_wurcs <- function(
+  x,
+  on_failure = "error",
+  progress = FALSE,
+  validate = lifecycle::deprecated()
+) {
+  if (!missing(validate)) {
+    warn_deprecated_validate("parse_wurcs")
+  }
+  struc_parser_wrapper(
+    x,
+    "wurcs",
+    on_failure = on_failure,
+    progress = progress
+  )
+}
